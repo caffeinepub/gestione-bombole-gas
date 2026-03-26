@@ -18,6 +18,7 @@ export interface Bombola {
     gasResiduoKg: number;
     utilizzi: Array<Utilizzo>;
     taraKg: number;
+    assegnazione: string;
     tipoGas: string;
     codice: string;
     gasTotaleKg: number;
@@ -26,6 +27,7 @@ export interface Bombola {
 export interface backendInterface {
     addBombola(codice: string, produttore: string, taraKg: number, gasTotaleKg: number, tipoGas: string): Promise<void>;
     addTestData(): Promise<void>;
+    assegnaBombola(codice: string, tecnico: string): Promise<void>;
     bombolaExists(codice: string): Promise<boolean>;
     deleteBombola(codice: string): Promise<void>;
     getAllBombole(): Promise<Array<Bombola>>;

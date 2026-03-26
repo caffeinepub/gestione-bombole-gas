@@ -14,6 +14,7 @@ export interface Bombola {
   'gasResiduoKg' : number,
   'utilizzi' : Array<Utilizzo>,
   'taraKg' : number,
+  'assegnazione' : string,
   'tipoGas' : string,
   'codice' : string,
   'gasTotaleKg' : number,
@@ -32,6 +33,7 @@ export interface _SERVICE {
     undefined
   >,
   'addTestData' : ActorMethod<[], undefined>,
+  'assegnaBombola' : ActorMethod<[string, string], undefined>,
   'bombolaExists' : ActorMethod<[string], boolean>,
   'deleteBombola' : ActorMethod<[string], undefined>,
   'getAllBombole' : ActorMethod<[], Array<Bombola>>,

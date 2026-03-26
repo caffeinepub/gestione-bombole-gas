@@ -5,7 +5,9 @@ import Array "mo:core/Array";
 import Time "mo:core/Time";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
+
 import Order "mo:core/Order";
+
 
 actor {
   type Utilizzo = {
@@ -30,6 +32,7 @@ actor {
     gasResiduoKg : Float;
     tipoGas : Text;
     utilizzi : [Utilizzo];
+    assegnazione : Text;
   };
 
   module Bombola {
@@ -50,6 +53,7 @@ actor {
       gasResiduoKg = gasTotaleKg;
       tipoGas;
       utilizzi = [];
+      assegnazione = "Magazzino";
     };
     bombole.add(codice, bombola);
   };
@@ -90,8 +94,14 @@ actor {
     };
   };
 
-  public query ({ caller }) func getAllBombole() : async [Bombola] {
-    bombole.values().toArray().sort();
+  public shared ({ caller }) func assegnaBombola(codice : Text, tecnico : Text) : async () {
+    switch (bombole.get(codice)) {
+      case (null) { Runtime.trap("Bombola non trovata") };
+      case (?bombola) {
+        let updatedBombola : Bombola = { bombola with assegnazione = tecnico };
+        bombole.add(codice, updatedBombola);
+      };
+    };
   };
 
   public shared ({ caller }) func deleteBombola(codice : Text) : async () {
@@ -99,6 +109,10 @@ actor {
       case (null) { Runtime.trap("Bombola non trovata") };
       case (?_) { ignore bombole.remove(codice) };
     };
+  };
+
+  public query ({ caller }) func getAllBombole() : async [Bombola] {
+    bombole.values().toArray().sort();
   };
 
   public func addTestData() : async () {
@@ -118,6 +132,7 @@ actor {
       gasResiduoKg = 110;
       tipoGas = "propano";
       utilizzi = [testUtilizzo];
+      assegnazione = "Magazzino";
     };
 
     bombole.add(testBombola.codice, testBombola);

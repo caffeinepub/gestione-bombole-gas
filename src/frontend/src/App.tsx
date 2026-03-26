@@ -9,6 +9,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -37,8 +44,10 @@ import {
   Plus,
   QrCode,
   RefreshCw,
+  RotateCcw,
   Search,
   Trash2,
+  UserCheck,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -60,6 +69,7 @@ interface Bombola {
   gasResiduoKg: number;
   utilizzi: Array<Utilizzo>;
   taraKg: number;
+  assegnazione: string;
   tipoGas: string;
   codice: string;
   gasTotaleKg: number;
@@ -145,6 +155,24 @@ function StatoBadge({ stato }: { stato: Stato }) {
       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${cls}`}
     >
       {stato}
+    </span>
+  );
+}
+
+// ─── Assegnazione Badge ────────────────────────────────────────────────────────
+
+function AssegnazioneBadge({ assegnazione }: { assegnazione: string }) {
+  const isMagazzino = !assegnazione || assegnazione === "Magazzino";
+  return (
+    <span
+      className={
+        isMagazzino
+          ? "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border bg-muted/50 text-muted-foreground border-border"
+          : "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border bg-teal/10 text-teal border-teal/30"
+      }
+    >
+      {!isMagazzino && <UserCheck className="h-3 w-3" />}
+      {isMagazzino ? "Magazzino" : assegnazione}
     </span>
   );
 }
@@ -334,6 +362,17 @@ function ListaBombole({
   const [bomboleDaEliminare, setBomboleDaEliminare] = useState<Bombola[]>([]);
   const [reportScaricato, setReportScaricato] = useState(false);
 
+  // Assegna dialog state
+  const [assegnaOpen, setAssegnaOpen] = useState(false);
+  const [assegnaCodice, setAssegnaCodice] = useState("");
+  const [nomeTecnico, setNomeTecnico] = useState("");
+  const [assegnando, setAssegnando] = useState(false);
+
+  // Reso dialog state
+  const [resoOpen, setResoOpen] = useState(false);
+  const [resoCodice, setResoCodice] = useState("");
+  const [resando, setResando] = useState(false);
+
   useEffect(() => {
     if (showDeleteDialog) {
       setReportScaricato(false);
@@ -399,13 +438,61 @@ function ListaBombole({
     }
   };
 
+  const openAssegnaDialog = (codice: string) => {
+    setAssegnaCodice(codice);
+    setNomeTecnico("");
+    setAssegnaOpen(true);
+  };
+
+  const handleAssegna = async () => {
+    if (!nomeTecnico.trim()) return;
+    setAssegnando(true);
+    try {
+      if (!actor) return;
+      await actor.assegnaBombola(assegnaCodice, nomeTecnico.trim());
+      await load();
+      toast.success(
+        `Bombola ${assegnaCodice} assegnata a ${nomeTecnico.trim()}`,
+      );
+      setAssegnaOpen(false);
+    } catch {
+      toast.error("Errore durante l'assegnazione");
+    } finally {
+      setAssegnando(false);
+    }
+  };
+
+  const openResoDialog = (codice: string) => {
+    setResoCodice(codice);
+    setResoOpen(true);
+  };
+
+  const handleReso = async () => {
+    setResando(true);
+    try {
+      if (!actor) return;
+      await actor.assegnaBombola(resoCodice, "Magazzino");
+      await load();
+      toast.success(`Bombola ${resoCodice} restituita al magazzino`);
+      setResoOpen(false);
+    } catch {
+      toast.error("Errore durante il reso");
+    } finally {
+      setResando(false);
+    }
+  };
+
   const gasTypes = Array.from(new Set(bombole.map((b) => b.tipoGas)));
 
   const filtered = bombole.filter((b) => {
     const matchSearch =
       search === "" ||
       b.codice.toLowerCase().includes(search.toLowerCase()) ||
-      b.produttore.toLowerCase().includes(search.toLowerCase());
+      b.produttore.toLowerCase().includes(search.toLowerCase()) ||
+      b.tipoGas.toLowerCase().includes(search.toLowerCase()) ||
+      (b.assegnazione ?? "Magazzino")
+        .toLowerCase()
+        .includes(search.toLowerCase());
     const stato = getStato(b);
     const matchStato = statoFilter === "tutti" || stato === statoFilter;
     const matchGas = gasFilter === "tutti" || b.tipoGas === gasFilter;
@@ -492,6 +579,91 @@ function ListaBombole({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Assegna dialog */}
+      <Dialog open={assegnaOpen} onOpenChange={setAssegnaOpen}>
+        <DialogContent data-ocid="assegna.dialog">
+          <DialogHeader>
+            <DialogTitle>Assegna Bombola</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Bombola:{" "}
+              <span className="font-mono font-semibold text-foreground">
+                {assegnaCodice}
+              </span>
+            </p>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-foreground">Nome Tecnico *</Label>
+              <Input
+                value={nomeTecnico}
+                onChange={(e) => setNomeTecnico(e.target.value)}
+                placeholder="Es. Mario Rossi"
+                className="bg-muted border-border"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleAssegna();
+                }}
+                autoFocus
+                data-ocid="assegna.input"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAssegnaOpen(false)}
+              disabled={assegnando}
+              data-ocid="assegna.cancel_button"
+            >
+              Annulla
+            </Button>
+            <Button
+              onClick={handleAssegna}
+              disabled={assegnando || !nomeTecnico.trim()}
+              className="bg-teal text-primary-foreground hover:bg-teal/90"
+              data-ocid="assegna.confirm_button"
+            >
+              {assegnando ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Assegna
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reso dialog */}
+      <AlertDialog open={resoOpen} onOpenChange={setResoOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reso Bombola</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro di voler restituire la bombola{" "}
+              <span className="font-mono font-semibold">{resoCodice}</span> al
+              magazzino? L&apos;assegnazione verrà rimossa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={resando}
+              data-ocid="reso.cancel_button"
+            >
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleReso}
+              disabled={resando}
+              className="bg-amber-500 text-white hover:bg-amber-600"
+              data-ocid="reso.confirm_button"
+            >
+              {resando ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Conferma Reso
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* KPI */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <KpiTile label="Totale Bombole" value={totale} color="text-teal" />
@@ -516,7 +688,7 @@ function ListaBombole({
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Cerca per codice o produttore..."
+            placeholder="Cerca per codice, tipo gas o tecnico..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9 bg-card border-border text-foreground placeholder:text-muted-foreground"
@@ -619,6 +791,9 @@ function ListaBombole({
                   Livello Residuo
                 </TableHead>
                 <TableHead className="text-xs text-muted-foreground uppercase tracking-wide">
+                  Assegnazione
+                </TableHead>
+                <TableHead className="text-xs text-muted-foreground uppercase tracking-wide">
                   Produttore
                 </TableHead>
                 <TableHead className="text-xs text-muted-foreground uppercase tracking-wide">
@@ -633,7 +808,7 @@ function ListaBombole({
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={7}
                     className="text-center text-muted-foreground py-10"
                     data-ocid="lista.filtered_empty_state"
                   >
@@ -656,6 +831,11 @@ function ListaBombole({
                     <TableCell>
                       <ResiduoBar bombola={b} />
                     </TableCell>
+                    <TableCell>
+                      <AssegnazioneBadge
+                        assegnazione={b.assegnazione ?? "Magazzino"}
+                      />
+                    </TableCell>
                     <TableCell className="text-muted-foreground">
                       {b.produttore}
                     </TableCell>
@@ -675,16 +855,29 @@ function ListaBombole({
                         >
                           Dettagli
                         </Button>
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            onNavigate({ type: "utilizzo", codice: b.codice })
-                          }
-                          className="bg-teal text-primary-foreground hover:bg-teal/90"
-                          data-ocid={`lista.utilizzo_button.${i + 1}`}
-                        >
-                          Utilizzo
-                        </Button>
+                        {b.assegnazione && b.assegnazione !== "Magazzino" ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openResoDialog(b.codice)}
+                            className="border-amber-400/60 text-amber-600 hover:bg-amber-50 gap-1"
+                            data-ocid={`lista.reso_button.${i + 1}`}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            Reso
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openAssegnaDialog(b.codice)}
+                            className="border-teal/40 text-teal hover:bg-teal/10 gap-1"
+                            data-ocid={`lista.assegna_button.${i + 1}`}
+                          >
+                            <UserCheck className="h-3.5 w-3.5" />
+                            Assegna
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -790,7 +983,12 @@ function DettaglioBombola({
             </h2>
             <p className="text-muted-foreground mt-1">{bombola.tipoGas}</p>
           </div>
-          <StatoBadge stato={stato} />
+          <div className="flex items-center gap-2">
+            <AssegnazioneBadge
+              assegnazione={bombola.assegnazione ?? "Magazzino"}
+            />
+            <StatoBadge stato={stato} />
+          </div>
         </div>
 
         {/* Gas Level */}
@@ -933,7 +1131,12 @@ function RegistraUtilizzo({
     if (!actor) return;
     actor
       .getBombola(codice)
-      .then(setBombola)
+      .then((b) => {
+        setBombola(b);
+        if (b?.assegnazione !== undefined && b.assegnazione !== "Magazzino") {
+          setTecnico(b.assegnazione);
+        }
+      })
       .catch(() => toast.error("Errore nel caricamento"));
   }, [codice, actor]);
 
@@ -1031,7 +1234,7 @@ function RegistraUtilizzo({
             <Input
               value={apparecchiatura}
               onChange={(e) => setApparecchiatura(e.target.value)}
-              placeholder="Es. Saldatrice MIG 200A"
+              placeholder="Es. Condizionatore Numero Marca"
               className="bg-muted border-border"
               data-ocid="utilizzo.apparecchiatura_input"
             />
@@ -1068,9 +1271,9 @@ function RegistraUtilizzo({
             <Label className="text-sm text-foreground">Tecnico *</Label>
             <Input
               value={tecnico}
-              onChange={(e) => setTecnico(e.target.value)}
+              readOnly
               placeholder="Es. Mario Rossi"
-              className="bg-muted border-border"
+              className="bg-muted border-border opacity-70 cursor-not-allowed"
               data-ocid="utilizzo.tecnico_input"
             />
             {errors.tecnico && (

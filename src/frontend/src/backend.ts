@@ -100,6 +100,7 @@ export interface Bombola {
     gasResiduoKg: number;
     utilizzi: Array<Utilizzo>;
     taraKg: number;
+    assegnazione: string;
     tipoGas: string;
     codice: string;
     gasTotaleKg: number;
@@ -108,11 +109,12 @@ export interface Bombola {
 export interface backendInterface {
     addBombola(codice: string, produttore: string, taraKg: number, gasTotaleKg: number, tipoGas: string): Promise<void>;
     addTestData(): Promise<void>;
+    assegnaBombola(codice: string, tecnico: string): Promise<void>;
     bombolaExists(codice: string): Promise<boolean>;
+    deleteBombola(codice: string): Promise<void>;
     getAllBombole(): Promise<Array<Bombola>>;
     getBombola(codice: string): Promise<Bombola>;
     registerUtilizzo(codice: string, luogo: string, apparecchiatura: string, kgUsati: number, tecnico: string): Promise<void>;
-    deleteBombola(codice: string): Promise<void>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
@@ -144,6 +146,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async assegnaBombola(arg0: string, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.assegnaBombola(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.assegnaBombola(arg0, arg1);
+            return result;
+        }
+    }
     async bombolaExists(arg0: string): Promise<boolean> {
         if (this.processError) {
             try {
@@ -155,6 +171,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.bombolaExists(arg0);
+            return result;
+        }
+    }
+    async deleteBombola(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteBombola(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteBombola(arg0);
             return result;
         }
     }
@@ -198,18 +228,6 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.registerUtilizzo(arg0, arg1, arg2, arg3, arg4);
             return result;
-        }
-    }
-    async deleteBombola(codice: string): Promise<void> {
-        if (this.processError) {
-            try {
-                await this.actor.deleteBombola(codice);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            await this.actor.deleteBombola(codice);
         }
     }
 }
