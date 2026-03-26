@@ -77,8 +77,7 @@ type Stato = "Piena" | "In Uso" | "Sotto Livello" | "Vuota";
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function isVuota(b: Bombola): boolean {
-  if (b.gasTotaleKg === 0) return b.gasResiduoKg === 0;
-  return b.gasResiduoKg / b.gasTotaleKg < 0.002;
+  return b.gasResiduoKg <= 0.3;
 }
 
 function getStato(b: Bombola): Stato {
@@ -298,9 +297,9 @@ function KpiTile({
 
 function ResiduoBar({ bombola }: { bombola: Bombola }) {
   const pct = getPercent(bombola);
-  const low = pct < 20;
+  const low = isVuota(bombola);
   return (
-    <div className="flex items-center gap-2 min-w-[120px]">
+    <div className="flex items-center gap-2 min-w-[140px]">
       <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${low ? "bg-danger" : "bg-teal"}`}
@@ -308,9 +307,9 @@ function ResiduoBar({ bombola }: { bombola: Bombola }) {
         />
       </div>
       <span
-        className={`text-xs font-medium w-8 text-right ${low ? "text-danger" : "text-teal"}`}
+        className={`text-xs font-medium text-right whitespace-nowrap ${low ? "text-danger" : "text-teal"}`}
       >
-        {pct}%
+        {bombola.gasResiduoKg.toFixed(2)} kg
       </span>
     </div>
   );
@@ -333,6 +332,13 @@ function ListaBombole({
   const [deletingEmpty, setDeletingEmpty] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [bomboleDaEliminare, setBomboleDaEliminare] = useState<Bombola[]>([]);
+  const [reportScaricato, setReportScaricato] = useState(false);
+
+  useEffect(() => {
+    if (showDeleteDialog) {
+      setReportScaricato(false);
+    }
+  }, [showDeleteDialog]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -411,7 +417,7 @@ function ListaBombole({
     const s = getStato(b);
     return s === "In Uso" || s === "Piena";
   }).length;
-  const vuote = bombole.filter((b) => getStato(b) === "Vuota").length;
+  const vuote = bombole.filter(isVuota).length;
 
   return (
     <div className="space-y-6">
@@ -427,8 +433,7 @@ function ListaBombole({
                   <span className="font-semibold text-danger">
                     {bomboleDaEliminare.length} bombole vuote
                   </span>{" "}
-                  (con meno dello 0,2% del gas iniziale). Questa azione è
-                  irreversibile.
+                  (con ≤ 0,3 kg di gas residuo). Questa azione è irreversibile.
                 </p>
                 <ul className="space-y-1.5 max-h-48 overflow-y-auto">
                   {bomboleDaEliminare.map((b) => (
@@ -439,12 +444,29 @@ function ListaBombole({
                       <span className="font-mono font-semibold text-foreground">
                         {b.codice}
                       </span>
-                      <span className="text-danger text-xs">
-                        {b.gasResiduoKg.toFixed(2)} kg
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-danger text-xs">
+                          {b.gasResiduoKg.toFixed(2)} kg
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs"
+                          onClick={() => {
+                            downloadReport(b);
+                            setReportScaricato(true);
+                          }}
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          Report
+                        </Button>
+                      </div>
                     </li>
                   ))}
                 </ul>
+                <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
+                  ⚠️ Ricordati di inviare il report all&apos;ufficio acquisti
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -457,7 +479,7 @@ function ListaBombole({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteEmpty}
-              disabled={deletingEmpty}
+              disabled={deletingEmpty || !reportScaricato}
               className="bg-danger hover:bg-danger/90 text-white"
               data-ocid="delete_empty.confirm_button"
             >
@@ -787,11 +809,6 @@ function DettaglioBombola({
               className={`h-full rounded-full transition-all ${pct < 20 ? "bg-danger" : "bg-teal"}`}
               style={{ width: `${pct}%` }}
             />
-          </div>
-          <div
-            className={`text-right text-xs mt-1 ${pct < 20 ? "text-danger" : "text-teal"}`}
-          >
-            {pct}%
           </div>
         </div>
 
