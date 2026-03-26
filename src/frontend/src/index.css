@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("/assets/fonts/Inter.woff2") format("woff2");
+}
+
+@layer base {
+  :root {
+    --radius: 0.625rem;
+    /* Dark industrial palette */
+    --background: 0.1 0.01 240;
+    --foreground: 0.93 0.008 240;
+    --card: 0.14 0.012 240;
+    --card-foreground: 0.93 0.008 240;
+    --popover: 0.16 0.013 240;
+    --popover-foreground: 0.93 0.008 240;
+    --primary: 0.72 0.16 170;
+    --primary-foreground: 0.1 0.01 240;
+    --secondary: 0.2 0.015 240;
+    --secondary-foreground: 0.93 0.008 240;
+    --muted: 0.18 0.013 240;
+    --muted-foreground: 0.6 0.014 240;
+    --accent: 0.72 0.16 170;
+    --accent-foreground: 0.1 0.01 240;
+    --destructive: 0.58 0.2 25;
+    --destructive-foreground: 0.985 0 0;
+    --border: 0.22 0.018 240;
+    --input: 0.22 0.018 240;
+    --ring: 0.72 0.16 170;
+    /* Custom semantic tokens */
+    --teal: 0.72 0.16 170;
+    --cyan: 0.67 0.18 230;
+    --amber: 0.77 0.16 75;
+    --danger: 0.58 0.2 25;
+    --chart-1: 0.72 0.16 170;
+    --chart-2: 0.67 0.18 230;
+    --chart-3: 0.77 0.16 75;
+    --chart-4: 0.58 0.2 25;
+    --chart-5: 0.6 0.014 240;
+    --sidebar: 0.12 0.011 240;
+    --sidebar-foreground: 0.93 0.008 240;
+    --sidebar-primary: 0.72 0.16 170;
+    --sidebar-primary-foreground: 0.1 0.01 240;
+    --sidebar-accent: 0.2 0.015 240;
+    --sidebar-accent-foreground: 0.93 0.008 240;
+    --sidebar-border: 0.22 0.018 240;
+    --sidebar-ring: 0.72 0.16 170;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", system-ui, sans-serif;
+  }
+}
