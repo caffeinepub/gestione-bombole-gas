@@ -41,7 +41,7 @@ actor {
     };
   };
 
-  stable var bomboleStable : [(Text, Bombola)] = [];
+  var bomboleStable : [(Text, Bombola)] = [];
   var bombole = Map.empty<Text, Bombola>();
 
   system func preupgrade() {
@@ -94,11 +94,11 @@ actor {
           tecnico;
         };
         let newGasResiduo = Float.max(0, bombola.gasResiduoKg - kgUsati);
-        let newUtilizzi = bombola.utilizzi.concat([utilizzo]);
+        let allUtilizzi = bombola.utilizzi.concat([utilizzo]);
         let updatedBombola : Bombola = {
           bombola with
           gasResiduoKg = newGasResiduo;
-          utilizzi = newUtilizzi.sort();
+          utilizzi = allUtilizzi.sort();
         };
         bombole.add(codice, updatedBombola);
       };
@@ -118,7 +118,7 @@ actor {
   public shared ({ caller }) func deleteBombola(codice : Text) : async () {
     switch (bombole.get(codice)) {
       case (null) { Runtime.trap("Bombola non trovata") };
-      case (?_) { ignore bombole.remove(codice) };
+      case (?_) { bombole.remove(codice) };
     };
   };
 
