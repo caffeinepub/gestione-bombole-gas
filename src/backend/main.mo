@@ -1,9 +1,7 @@
 import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Float "mo:core/Float";
-import Array "mo:core/Array";
 import Time "mo:core/Time";
-import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
 import Int "mo:core/Int";
 import Order "mo:core/Order";
@@ -41,7 +39,7 @@ actor {
     };
   };
 
-  var bomboleStable : [(Text, Bombola)] = [];
+  stable var bomboleStable : [(Text, Bombola)] = [];
   var bombole = Map.empty<Text, Bombola>();
 
   system func preupgrade() {
@@ -54,7 +52,7 @@ actor {
     };
   };
 
-  public shared ({ caller }) func addBombola(codice : Text, produttore : Text, taraKg : Float, gasTotaleKg : Float, tipoGas : Text) : async () {
+  public shared func addBombola(codice : Text, produttore : Text, taraKg : Float, gasTotaleKg : Float, tipoGas : Text) : async () {
     if (bombole.containsKey(codice)) { Runtime.trap("Bombola esiste già con questo codice") };
     let bombola : Bombola = {
       codice;
@@ -69,18 +67,18 @@ actor {
     bombole.add(codice, bombola);
   };
 
-  public query ({ caller }) func bombolaExists(codice : Text) : async Bool {
+  public query func bombolaExists(codice : Text) : async Bool {
     bombole.containsKey(codice);
   };
 
-  public query ({ caller }) func getBombola(codice : Text) : async Bombola {
+  public query func getBombola(codice : Text) : async Bombola {
     switch (bombole.get(codice)) {
       case (null) { Runtime.trap("Bombola non trovata") };
       case (?bombola) { bombola };
     };
   };
 
-  public shared ({ caller }) func registerUtilizzo(codice : Text, luogo : Text, apparecchiatura : Text, kgUsati : Float, tecnico : Text) : async () {
+  public shared func registerUtilizzo(codice : Text, luogo : Text, apparecchiatura : Text, kgUsati : Float, tecnico : Text) : async () {
     if (kgUsati <= 0) { Runtime.trap("kgUsati deve essere maggiore di 0") };
     switch (bombole.get(codice)) {
       case (null) { Runtime.trap("Bombola non trovata") };
@@ -105,7 +103,7 @@ actor {
     };
   };
 
-  public shared ({ caller }) func assegnaBombola(codice : Text, tecnico : Text) : async () {
+  public shared func assegnaBombola(codice : Text, tecnico : Text) : async () {
     switch (bombole.get(codice)) {
       case (null) { Runtime.trap("Bombola non trovata") };
       case (?bombola) {
@@ -115,14 +113,14 @@ actor {
     };
   };
 
-  public shared ({ caller }) func deleteBombola(codice : Text) : async () {
+  public shared func deleteBombola(codice : Text) : async () {
     switch (bombole.get(codice)) {
       case (null) { Runtime.trap("Bombola non trovata") };
       case (?_) { bombole.remove(codice) };
     };
   };
 
-  public query ({ caller }) func getAllBombole() : async [Bombola] {
+  public query func getAllBombole() : async [Bombola] {
     bombole.values().toArray().sort();
   };
 
