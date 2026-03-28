@@ -1,23 +1,23 @@
 # Gestione Bombole Gas
 
 ## Current State
-The app has a cylinder list view showing all cylinders with columns for code, gas type, level, assignment, and action buttons (Assegna/Reso). The list displays all cylinders without any filtering capability.
+App funzionante con backend Motoko e frontend React. Problema ricorrente: "errore nel caricamento bombole" causato da chiamate `.sort()` senza comparatore nel backend.
 
 ## Requested Changes (Diff)
 
 ### Add
-- A single text input search bar above the cylinder list table.
-- Real-time filtering logic that filters cylinders as the user types.
+- Import `Array "mo:core/Array"` nel backend
 
 ### Modify
-- The cylinder list section: wrap the table with filter state, add the search input above it.
-- The filter searches across: codice (cylinder code), tipoGas (gas type), and assegnazione (assigned technician name, including "Magazzino").
+- `registerUtilizzo`: sostituire `allUtilizzi.sort()` con `Array.sort(allUtilizzi, compareUtilizzo)`
+- `getAllBombole`: sostituire `bombole.values().toArray().sort()` con `Array.sort(..., compareBombola)`
+- Spostare `compare` da moduli interni a funzioni locali per compatibilità
+- Rimuovere `addTestData` dal backend (non più necessario)
 
 ### Remove
-- Nothing removed.
+- Funzione `addTestData` dal backend
+- Moduli `Bombola` e `Utilizzo` con `.compare` sostituiti da funzioni locali
 
 ## Implementation Plan
-1. Add a `searchQuery` state variable in the cylinder list section of App.tsx.
-2. Add a text input field above the cylinder list table with placeholder "Cerca per codice, tipo gas o tecnico...".
-3. Filter the displayed cylinders array using the search query (case-insensitive match against codice, tipoGas, assegnazione).
-4. Ensure the search is reactive (filters on every keystroke).
+- Backend già riscritto con fix
+- Frontend: nessuna modifica necessaria, mantieni tutto com'è

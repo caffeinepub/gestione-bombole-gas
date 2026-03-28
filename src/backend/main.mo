@@ -16,10 +16,8 @@ actor {
     tecnico : Text;
   };
 
-  module Utilizzo {
-    public func compare(u1 : Utilizzo, u2 : Utilizzo) : Order.Order {
-      Int.compare(u1.data, u2.data);
-    };
+  func compareUtilizzo(u1 : Utilizzo, u2 : Utilizzo) : Order.Order {
+    Int.compare(u1.data, u2.data);
   };
 
   type Bombola = {
@@ -33,13 +31,11 @@ actor {
     assegnazione : Text;
   };
 
-  module Bombola {
-    public func compare(b1 : Bombola, b2 : Bombola) : Order.Order {
-      Text.compare(b1.codice, b2.codice);
-    };
+  func compareBombola(b1 : Bombola, b2 : Bombola) : Order.Order {
+    Text.compare(b1.codice, b2.codice);
   };
 
-  stable var bomboleStable : [(Text, Bombola)] = [];
+  var bomboleStable : [(Text, Bombola)] = [];
   var bombole = Map.empty<Text, Bombola>();
 
   system func preupgrade() {
@@ -93,10 +89,11 @@ actor {
         };
         let newGasResiduo = Float.max(0, bombola.gasResiduoKg - kgUsati);
         let allUtilizzi = bombola.utilizzi.concat([utilizzo]);
+        let sortedUtilizzi = allUtilizzi.sort(compareUtilizzo);
         let updatedBombola : Bombola = {
           bombola with
           gasResiduoKg = newGasResiduo;
-          utilizzi = allUtilizzi.sort();
+          utilizzi = sortedUtilizzi;
         };
         bombole.add(codice, updatedBombola);
       };
@@ -121,29 +118,6 @@ actor {
   };
 
   public query func getAllBombole() : async [Bombola] {
-    bombole.values().toArray().sort();
-  };
-
-  public func addTestData() : async () {
-    let testUtilizzo : Utilizzo = {
-      data = 1715688409000000000;
-      luogo = "Hotel";
-      apparecchiatura = "Frigorifero";
-      kgUsati = 10;
-      tecnico = "Beppe";
-    };
-
-    let testBombola : Bombola = {
-      codice = "ITALGas0934832092301238";
-      produttore = "ITALGAS";
-      taraKg = 230;
-      gasTotaleKg = 120;
-      gasResiduoKg = 110;
-      tipoGas = "propano";
-      utilizzi = [testUtilizzo];
-      assegnazione = "Magazzino";
-    };
-
-    bombole.add(testBombola.codice, testBombola);
+    bombole.values().toArray().sort(compareBombola);
   };
 };
