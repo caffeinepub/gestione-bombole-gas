@@ -5,7 +5,7 @@ import Array "mo:core/Array";
 import Time "mo:core/Time";
 import Iter "mo:core/Iter";
 import Runtime "mo:core/Runtime";
-
+import Int "mo:core/Int";
 import Order "mo:core/Order";
 
 
@@ -41,7 +41,16 @@ actor {
     };
   };
 
-  let bombole = Map.empty<Text, Bombola>();
+  stable var bomboleStable : [(Text, Bombola)] = [];
+  var bombole = Map.empty<Text, Bombola>();
+
+  system func preupgrade() {
+    bomboleStable := bombole.entries().toArray();
+  };
+
+  system func postupgrade() {
+    bombole := Map.fromIter(bomboleStable.vals());
+  };
 
   public shared ({ caller }) func addBombola(codice : Text, produttore : Text, taraKg : Float, gasTotaleKg : Float, tipoGas : Text) : async () {
     if (bombole.containsKey(codice)) { Runtime.trap("Bombola esiste già con questo codice") };
