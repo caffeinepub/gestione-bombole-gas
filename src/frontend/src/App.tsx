@@ -714,7 +714,7 @@ function ListaBombole({
             data-ocid="lista.download_csv_button"
           >
             <FileDown className="h-3.5 w-3.5" />
-            Scarica Report
+            Scarica report generale
           </Button>
         </div>
         <KpiTile label="Vuote" value={vuote} color="text-danger" />
@@ -998,7 +998,7 @@ function DettaglioBombola({
             data-ocid="dettaglio.download_report_button"
           >
             <Download className="h-4 w-4" />
-            Scarica Report
+            Scarica report generale
           </Button>
           <Button
             onClick={() => onNavigate({ type: "utilizzo", codice })}
