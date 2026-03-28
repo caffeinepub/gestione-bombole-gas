@@ -49,7 +49,9 @@ actor {
   };
 
   system func postupgrade() {
-    bombole := Map.fromIter(bomboleStable.vals());
+    for ((k, v) in bomboleStable.vals()) {
+      bombole.add(k, v);
+    };
   };
 
   public shared ({ caller }) func addBombola(codice : Text, produttore : Text, taraKg : Float, gasTotaleKg : Float, tipoGas : Text) : async () {

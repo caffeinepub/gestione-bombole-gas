@@ -39,6 +39,7 @@ import {
   ArrowLeft,
   Cylinder,
   Download,
+  FileDown,
   FlaskConical,
   Loader2,
   Plus,
@@ -141,6 +142,32 @@ function downloadReport(b: Bombola): void {
   URL.revokeObjectURL(url);
 }
 
+function downloadReportCSV(bombole: Bombola[]): void {
+  const headers = [
+    "Codice",
+    "Produttore",
+    "Tipo Gas",
+    "Gas Residuo (kg)",
+    "Assegnazione",
+  ];
+  const rows = bombole.map((b) => [
+    b.codice,
+    b.produttore,
+    b.tipoGas,
+    b.gasResiduoKg.toFixed(2),
+    b.assegnazione,
+  ]);
+  const csv = [headers, ...rows]
+    .map((r) => r.map((v) => `"${v}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `report-bombole-${new Date().toLocaleDateString("it-IT").replace(/\//g, "-")}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 
 function StatoBadge({ stato }: { stato: Stato }) {
@@ -678,6 +705,16 @@ function ListaBombole({
           >
             <Trash2 className="h-3.5 w-3.5" />
             Cancella Vuote
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadReportCSV(filtered)}
+            className="border-primary text-primary hover:bg-primary/10 gap-2 w-full"
+            data-ocid="lista.download_csv_button"
+          >
+            <FileDown className="h-3.5 w-3.5" />
+            Scarica Report
           </Button>
         </div>
         <KpiTile label="Vuote" value={vuote} color="text-danger" />
