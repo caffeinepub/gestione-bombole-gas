@@ -38,7 +38,6 @@ export const idlService = IDL.Service({
   'deleteBombola' : IDL.Func([IDL.Text], [], []),
   'getAllBombole' : IDL.Func([], [IDL.Vec(Bombola)], ['query']),
   'getBombola' : IDL.Func([IDL.Text], [Bombola], ['query']),
-  'importaBombole' : IDL.Func([IDL.Vec(Bombola)], [], []),
   'registerUtilizzo' : IDL.Func(
       [IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Text],
       [],
@@ -79,7 +78,6 @@ export const idlFactory = ({ IDL }) => {
     'deleteBombola' : IDL.Func([IDL.Text], [], []),
     'getAllBombole' : IDL.Func([], [IDL.Vec(Bombola)], ['query']),
     'getBombola' : IDL.Func([IDL.Text], [Bombola], ['query']),
-    'importaBombole' : IDL.Func([IDL.Vec(Bombola)], [], []),
     'registerUtilizzo' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Text, IDL.Float64, IDL.Text],
         [],

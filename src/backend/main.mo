@@ -35,7 +35,7 @@ actor {
     Text.compare(b1.codice, b2.codice);
   };
 
-  var bomboleStable : [(Text, Bombola)] = [];
+  stable var bomboleStable : [(Text, Bombola)] = [];
   var bombole = Map.empty<Text, Bombola>();
 
   system func preupgrade() {

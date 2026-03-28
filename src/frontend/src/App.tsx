@@ -593,7 +593,7 @@ function ListaBombole({
     try {
       if (!actor) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (actor as any).importaBombole(pendingImportData);
+      await actor.importaBombole(pendingImportData);
       await load();
       toast.success("Backup importato correttamente");
       setImportConfirmOpen(false);

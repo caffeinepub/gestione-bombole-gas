@@ -38,7 +38,6 @@ export interface _SERVICE {
   'deleteBombola' : ActorMethod<[string], undefined>,
   'getAllBombole' : ActorMethod<[], Array<Bombola>>,
   'getBombola' : ActorMethod<[string], Bombola>,
-  'importaBombole' : ActorMethod<[Array<Bombola>], undefined>,
   'registerUtilizzo' : ActorMethod<
     [string, string, string, number, string],
     undefined

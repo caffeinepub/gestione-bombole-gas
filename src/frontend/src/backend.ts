@@ -115,6 +115,7 @@ export interface backendInterface {
     getAllBombole(): Promise<Array<Bombola>>;
     getBombola(codice: string): Promise<Bombola>;
     registerUtilizzo(codice: string, luogo: string, apparecchiatura: string, kgUsati: number, tecnico: string): Promise<void>;
+    importaBombole(dati: Array<Bombola>): Promise<void>;
 }
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
@@ -227,6 +228,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.registerUtilizzo(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
+    async importaBombole(arg0: Array<Bombola>): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.importaBombole(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.importaBombole(arg0);
             return result;
         }
     }
