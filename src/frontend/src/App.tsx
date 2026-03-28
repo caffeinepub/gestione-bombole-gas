@@ -38,6 +38,7 @@ import { useQRScanner } from "@/qr-code/useQRScanner";
 import {
   ArrowLeft,
   Cylinder,
+  Database,
   Download,
   FileDown,
   FlaskConical,
@@ -48,11 +49,12 @@ import {
   RotateCcw,
   Search,
   Trash2,
+  Upload,
   UserCheck,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useActor } from "./hooks/useActor";
 
@@ -400,6 +402,16 @@ function ListaBombole({
   const [resoCodice, setResoCodice] = useState("");
   const [resando, setResando] = useState(false);
 
+  // Backup state
+  const [backupPanelOpen, setBackupPanelOpen] = useState(false);
+  const [exportingBackup, setExportingBackup] = useState(false);
+  const [importingBackup, setImportingBackup] = useState(false);
+  const [importConfirmOpen, setImportConfirmOpen] = useState(false);
+  const [pendingImportData, setPendingImportData] = useState<Bombola[] | null>(
+    null,
+  );
+  const importFileRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (showDeleteDialog) {
       setReportScaricato(false);
@@ -506,6 +518,91 @@ function ListaBombole({
       toast.error("Errore durante il reso");
     } finally {
       setResando(false);
+    }
+  };
+
+  const handleExportBackup = async () => {
+    setExportingBackup(true);
+    try {
+      if (!actor) return;
+      const data = await actor.getAllBombole();
+      const json = JSON.stringify(
+        {
+          version: 1,
+          exportedAt: new Date().toISOString(),
+          bombole: data.map((b) => ({
+            ...b,
+            utilizzi: b.utilizzi.map((u) => ({
+              ...u,
+              data: u.data.toString(),
+            })),
+          })),
+        },
+        null,
+        2,
+      );
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `backup-bombole-${new Date().toISOString().split("T")[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Backup esportato correttamente");
+    } catch {
+      toast.error("Errore durante l'esportazione");
+    } finally {
+      setExportingBackup(false);
+    }
+  };
+
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target?.result as string);
+        if (!parsed.bombole || !Array.isArray(parsed.bombole)) {
+          toast.error("File non valido: manca il campo bombole");
+          return;
+        }
+        const bomboleData: Bombola[] = parsed.bombole.map(
+          (b: Bombola & { utilizzi: Array<Utilizzo & { data: string }> }) => ({
+            ...b,
+            utilizzi: b.utilizzi.map((u) => ({
+              ...u,
+              data: BigInt(u.data),
+            })),
+          }),
+        );
+        setPendingImportData(bomboleData);
+        setImportConfirmOpen(true);
+      } catch {
+        toast.error("Errore nel parsing del file JSON");
+      }
+    };
+    reader.readAsText(file);
+    // reset input so same file can be re-imported
+    e.target.value = "";
+  };
+
+  const handleConfirmImport = async () => {
+    if (!pendingImportData) return;
+    setImportingBackup(true);
+    try {
+      if (!actor) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (actor as any).importaBombole(pendingImportData);
+      await load();
+      toast.success("Backup importato correttamente");
+      setImportConfirmOpen(false);
+      setBackupPanelOpen(false);
+      setPendingImportData(null);
+    } catch {
+      toast.error("Errore durante l'importazione");
+    } finally {
+      setImportingBackup(false);
     }
   };
 
@@ -691,6 +788,39 @@ function ListaBombole({
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Import Backup Confirm Dialog */}
+      <AlertDialog open={importConfirmOpen} onOpenChange={setImportConfirmOpen}>
+        <AlertDialogContent data-ocid="backup.import.dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Importa backup</AlertDialogTitle>
+            <AlertDialogDescription>
+              Sei sicuro? L&apos;importazione sovrascriverà tutti i dati
+              esistenti. Questa operazione non può essere annullata.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={importingBackup}
+              onClick={() => setPendingImportData(null)}
+              data-ocid="backup.import.cancel_button"
+            >
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmImport}
+              disabled={importingBackup}
+              className="bg-danger hover:bg-danger/90 text-white"
+              data-ocid="backup.import.confirm_button"
+            >
+              {importingBackup ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : null}
+              Conferma importazione
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* KPI */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <KpiTile label="Totale Bombole" value={totale} color="text-teal" />
@@ -765,6 +895,16 @@ function ListaBombole({
         </Select>
         <div className="flex gap-2 ml-auto">
           <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setBackupPanelOpen((v) => !v)}
+            className="text-muted-foreground hover:text-foreground"
+            title="Backup dati"
+            data-ocid="lista.backup_button"
+          >
+            <Database className="h-4 w-4" />
+          </Button>
+          <Button
             variant="outline"
             size="icon"
             onClick={load}
@@ -783,6 +923,82 @@ function ListaBombole({
           </Button>
         </div>
       </div>
+
+      {/* Backup Panel */}
+      <AnimatePresence>
+        {backupPanelOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div
+              className="rounded-xl border border-border bg-card/60 p-4 flex flex-col gap-3"
+              data-ocid="backup.panel"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                  <Database className="h-4 w-4" />
+                  <span>Backup dati</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setBackupPanelOpen(false)}
+                  data-ocid="backup.close_button"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Esporta o importa tutte le bombole come file JSON per backup o
+                migrazione dati.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportBackup}
+                  disabled={exportingBackup}
+                  className="gap-2 text-muted-foreground"
+                  data-ocid="backup.export_button"
+                >
+                  {exportingBackup ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <FileDown className="h-3.5 w-3.5" />
+                  )}
+                  Esporta backup JSON
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => importFileRef.current?.click()}
+                  disabled={importingBackup}
+                  className="gap-2 text-muted-foreground"
+                  data-ocid="backup.import_button"
+                >
+                  {importingBackup ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="h-3.5 w-3.5" />
+                  )}
+                  Importa backup JSON
+                </Button>
+                <input
+                  ref={importFileRef}
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={handleImportFileChange}
+                />
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">

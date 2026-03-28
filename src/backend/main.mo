@@ -120,4 +120,16 @@ actor {
   public query func getAllBombole() : async [Bombola] {
     bombole.values().toArray().sort(compareBombola);
   };
+
+  public shared func importaBombole(dati : [Bombola]) : async () {
+    // Clear all existing data
+    let keys = bombole.keys().toArray();
+    for (k in keys.vals()) {
+      bombole.remove(k);
+    };
+    // Re-import all bombole from backup
+    for (b in dati.vals()) {
+      bombole.add(b.codice, b);
+    };
+  };
 };

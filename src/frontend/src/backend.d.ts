@@ -26,11 +26,11 @@ export interface Bombola {
 }
 export interface backendInterface {
     addBombola(codice: string, produttore: string, taraKg: number, gasTotaleKg: number, tipoGas: string): Promise<void>;
-    addTestData(): Promise<void>;
     assegnaBombola(codice: string, tecnico: string): Promise<void>;
     bombolaExists(codice: string): Promise<boolean>;
     deleteBombola(codice: string): Promise<void>;
     getAllBombole(): Promise<Array<Bombola>>;
     getBombola(codice: string): Promise<Bombola>;
+    importaBombole(dati: Array<Bombola>): Promise<void>;
     registerUtilizzo(codice: string, luogo: string, apparecchiatura: string, kgUsati: number, tecnico: string): Promise<void>;
 }
